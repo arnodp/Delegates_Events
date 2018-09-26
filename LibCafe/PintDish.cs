@@ -10,27 +10,44 @@ namespace LibCafe
     public delegate void PintStartedHandler(object sender, EventArgs e);
     public delegate void PintCompletedHandler(object sender, PintCompletedArgs e);
 
+    public delegate void DishHalfWayHandler(object sender, EventArgs e);
+    public delegate void DishCompletedHandler(object sender, EventArgs e, long time);
+
     public class PintDish
     {
         public event PintStartedHandler PintStarted;
         public event PintCompletedHandler PintCompleted;
 
+        public event DishHalfWayHandler Dishhalfway;
+        public event DishCompletedHandler DishCompleted;
+
         private int pintCount;
 
         public int PintCount { get { return pintCount; } } // c#6.0 enkel get in property: set enkel in constructor
         public int MaxPints { get; }
+        public System.Diagnostics.Stopwatch watch = new System.Diagnostics.Stopwatch();
 
         public PintDish(int maxPints)
         {
             MaxPints = maxPints;
+            watch.Start();
         }
 
         public void AddPint()
         {
-            if (pintCount >= MaxPints) throw new Exception("Dish full, order cancelled");
+            if (pintCount >= (MaxPints-1))
+            {
+                watch.Stop();
+                DishCompleted?.Invoke(this, EventArgs.Empty, watch.ElapsedMilliseconds);
+            }
+                
+
             PintStarted?.Invoke(this, EventArgs.Empty);
             pintCount++;
             PintCompleted?.Invoke(this, new PintCompletedArgs());
+
+            if (pintCount == (MaxPints/2))
+                Dishhalfway?.Invoke(this, EventArgs.Empty);
         }
     }
 
@@ -50,4 +67,5 @@ namespace LibCafe
             Waiter = Waiters[random.Next(0, Waiters.Length)];
         }
     }
+    
 }
